@@ -31,6 +31,8 @@ public class SecurityConfig {
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
+        //se pone antes de BasicAuthenticationFilter, porque si no tiene una api key, le debo decir que no
+        httpSecurity.addFilterBefore(new ApiKeyFilter(), BasicAuthenticationFilter.class);
         var requestHandler = new CsrfTokenRequestAttributeHandler();
         requestHandler.setCsrfRequestAttributeName("_csrf");
         httpSecurity.authorizeHttpRequests(auth ->
