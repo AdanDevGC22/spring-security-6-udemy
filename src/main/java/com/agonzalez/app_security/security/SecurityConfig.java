@@ -4,6 +4,7 @@ import org.springframework.cglib.proxy.NoOp;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -25,6 +26,7 @@ import javax.sql.DataSource;
 import java.util.List;
 
 @Configuration
+@EnableMethodSecurity
 public class SecurityConfig {
 
     @Bean
@@ -32,7 +34,12 @@ public class SecurityConfig {
         var requestHandler = new CsrfTokenRequestAttributeHandler();
         requestHandler.setCsrfRequestAttributeName("_csrf");
         httpSecurity.authorizeHttpRequests(auth ->
-                auth.requestMatchers("/loans","/balance","/accounts","/cards").authenticated()
+                //auth.requestMatchers("/loans","/balance","/accounts","/cards")
+                        auth
+                        .requestMatchers("/loans").hasAuthority("VIEW_LOANS")
+                        .requestMatchers("/balance").hasAuthority("VIEW_BALANCE")
+                        .requestMatchers("/cards").hasAuthority("VIEW_CARDS")
+                        //.requestMatchers("/accounts").hasAnyAuthority("VIEW_ACCOUNT","VIEW_CARDS")
                         .anyRequest().permitAll())
                 //auth.anyRequest().authenticated()) //cualquier request que sea mandado debe tener autenticación
                 .formLogin(Customizer.withDefaults()) //esto configura mi ventanita de login
