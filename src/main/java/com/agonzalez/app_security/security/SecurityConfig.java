@@ -14,14 +14,23 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.provisioning.JdbcUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import javax.sql.DataSource;
+import java.util.List;
 
 @Configuration
 public class SecurityConfig {
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
+        var requestHandler = new CsrfTokenRequestAttributeHandler();
+        requestHandler.setCsrfRequestAttributeName("_csrf");
         httpSecurity.authorizeHttpRequests(auth ->
                 auth.requestMatchers("/loans","/balance","/accounts","/cards").authenticated()
                         .anyRequest().permitAll())
@@ -29,6 +38,12 @@ public class SecurityConfig {
                 .formLogin(Customizer.withDefaults()) //esto configura mi ventanita de login
                 .httpBasic(Customizer.withDefaults()); //Esto es para configurar que mi metodo de autenticación se de
                 // tipo HTTP BASIC, que es usuario y contraseña basicamente
+        httpSecurity.cors(cors -> corsConfigurationSource());
+        httpSecurity.csrf(csrf -> csrf
+                .csrfTokenRequestHandler(requestHandler)
+                .ignoringRequestMatchers("/welcome","/about_us")
+                .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse()))
+                .addFilterAfter(new CsrfCookieFilter(), BasicAuthenticationFilter.class);
         return httpSecurity.build();
     }
 /*
@@ -57,5 +72,21 @@ public class SecurityConfig {
     @Bean
     PasswordEncoder passwordEncoder(){
         return NoOpPasswordEncoder.getInstance();
+    }
+    //vamos a configurar los CORS
+    @Bean
+    CorsConfigurationSource corsConfigurationSource(){
+        var config = new CorsConfiguration();
+        //pasamos una lista con los origenes que están permitidos
+        //config.setAllowedOrigins(List.of("http://localhost:4200/","http://my-aoo.com"));
+        config.setAllowedOrigins(List.of("*"));
+        //config.setAllowedMethods(List.of("GET","POST","PUT","DELETE"));
+        config.setAllowedMethods(List.of("*"));
+        config.setAllowedHeaders(List.of("*"));
+
+        var source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**",config);
+
+        return source;
     }
 }
